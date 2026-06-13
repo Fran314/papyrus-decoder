@@ -23,13 +23,13 @@ No, serial hardware = Yes.
 
 5 LEDs, common ground, 100 ohm series resistor each.
 
-| LED | BCM | Pi physical pin |
-| --- | --- | --------------- |
-| 0   | 17  | 11              |
-| 1   | 27  | 13              |
-| 2   | 22  | 15              |
-| 3   | 23  | 16              |
-| 4   | 24  | 18              |
+| LED | Pi signal | Pi physical pin |
+| --- | --------- | --------------- |
+| 0   | GPIO17    | 11              |
+| 1   | GPIO27    | 13              |
+| 2   | GPIO22    | 15              |
+| 3   | GPIO23    | 16              |
+| 4   | GPIO24    | 18              |
 
 ## Software
 
