@@ -35,5 +35,5 @@ No, serial hardware = Yes.
 
 ```
 python3 -m venv <venv>
-<venv>/bin/pip install gpiozero lgpio pn532pi
+<venv>/bin/pip install flask gpiozero lgpio pn532pi
 ```

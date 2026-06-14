@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Papyrus decoder</title>
+        <style>
+            body {
+                margin: 0;
+                height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #111;
+                color: #eee;
+                font-family: sans-serif;
+            }
+            #tag {
+                font-size: 2rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="tag">waiting for tag...</div>
+        <script>
+            const el = document.getElementById('tag')
+
+            async function poll() {
+                try {
+                    const res = await fetch('/tag')
+                    const data = await res.json()
+                    if (data.uid) el.textContent = 'detected: ' + data.uid
+                } catch (e) {
+                    el.textContent = 'connection lost...'
+                }
+                setTimeout(poll, 400)
+            }
+
+            poll()
+        </script>
+    </body>
+</html>
