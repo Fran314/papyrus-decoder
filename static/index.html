@@ -12,31 +12,51 @@
                 align-items: center;
                 justify-content: center;
                 background: #111;
-                color: #eee;
-                font-family: sans-serif;
+                overflow: hidden;
             }
-            #tag {
-                font-size: 2rem;
+            #scene {
+                max-width: 100vw;
+                max-height: 100vh;
+                object-fit: contain;
             }
         </style>
     </head>
     <body>
-        <div id="tag">waiting for tag...</div>
+        <img id="scene" alt="" />
         <script>
-            const el = document.getElementById('tag')
+            const SCENES = {
+                'papyrus-1': '/static/assets/papiro.png',
+                'papyrus-2': '/static/assets/girino.png',
+            }
+
+            const img = document.getElementById('scene')
+
+            // preload all the assets at the beginning so that they don't fade
+            // in progressively on first appearence
+            async function preloadAll() {
+                const res = await fetch('/assets')
+                const urls = await res.json()
+                await Promise.all(
+                    urls.map(url => {
+                        const image = new Image()
+                        image.src = url
+                        return image.decode().catch(() => {})
+                    }),
+                )
+            }
 
             async function poll() {
                 try {
                     const res = await fetch('/tag')
                     const data = await res.json()
-                    if (data.uid) el.textContent = 'detected: ' + data.uid
-                } catch (e) {
-                    el.textContent = 'connection lost...'
-                }
+                    if (data.scene && SCENES[data.scene]) {
+                        img.src = SCENES[data.scene]
+                    }
+                } catch (e) {}
                 setTimeout(poll, 400)
             }
 
-            poll()
+            preloadAll().finally(poll)
         </script>
     </body>
 </html>

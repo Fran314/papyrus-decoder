@@ -1,11 +1,20 @@
+from pathlib import Path
+
 from flask import Flask, jsonify, send_from_directory
 
 from nfc_reader import open_reader
 
 ABSENCE_SCANS = 3
 
+TAGS = {
+    "53cd2fe9630001": "papyrus-1",
+    "53d8f6e6630001": "papyrus-2",
+}
+
 app = Flask(__name__)
 reader = open_reader()
+
+ASSETS = Path(app.static_folder) / "assets"
 
 last_seen = None
 misses = 0
@@ -34,7 +43,14 @@ def index():
 
 @app.route("/tag")
 def tag():
-    return jsonify(uid=poll_new_tag())
+    uid = poll_new_tag()
+    return jsonify(scene=TAGS.get(uid) if uid else None)
+
+
+@app.route("/assets")
+def assets():
+    urls = ["/static/assets/" + p.name for p in sorted(ASSETS.iterdir()) if p.is_file()]
+    return jsonify(urls)
 
 
 if __name__ == "__main__":
