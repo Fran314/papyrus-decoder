@@ -53,5 +53,13 @@ def assets():
     return jsonify(urls)
 
 
+@app.route("/reset", methods=["POST"])
+def reset():
+    global last_seen, misses
+    last_seen = None
+    misses = 0
+    return ("", 204)
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)

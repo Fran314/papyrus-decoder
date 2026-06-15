@@ -7,29 +7,108 @@
         <style>
             body {
                 margin: 0;
-                height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
                 background: #111;
                 overflow: hidden;
             }
             #scene {
-                max-width: 100vw;
-                max-height: 100vh;
-                object-fit: contain;
+                display: block;
+                width: 100vw;
+                height: 100vh;
             }
         </style>
     </head>
     <body>
-        <img id="scene" alt="" />
+        <canvas id="scene"></canvas>
         <script>
             const SCENES = {
-                'papyrus-1': '/static/assets/papiro.png',
-                'papyrus-2': '/static/assets/girino.png',
+                'papyrus-1': {
+                    papyrus: 'papiro.png',
+                    icons: [
+                        { name: 'girino.png', cx: 500, cy: 250, h: 170 },
+                        { name: 'fiore.png', cx: 270, cy: 470, h: 230 },
+                        { name: 'dito.png', cx: 520, cy: 500, h: 230 },
+                        { name: 'corda_arrotolata.png', cx: 760, cy: 470, h: 190 },
+                    ],
+                },
+                'papyrus-2': {
+                    papyrus: 'papiro.png',
+                    icons: [
+                        { name: 'bastoncino.png', cx: 350, cy: 400, h: 300 },
+                        { name: 'corda_piegata.png', cx: 650, cy: 400, h: 280 },
+                    ],
+                },
             }
 
-            const img = document.getElementById('scene')
+            const HOLD = 1.5
+            const TRANSITION = 1.0
+            const MARGIN_LEFT = 60
+            const LARGE_FRACTION = 0.9
+            const SMALL_FACTOR = 0.8
+
+            const canvas = document.getElementById('scene')
+            const ctx = canvas.getContext('2d')
+            const images = {}
+
+            let current = null
+            let startTime = 0
+            let width = 0
+            let height = 0
+
+            const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+            const lerp = (a, b, t) => a + (b - a) * t
+            const smoothstep = t => t * t * (3 - 2 * t)
+
+            function resize() {
+                const dpr = window.devicePixelRatio || 1
+                width = window.innerWidth
+                height = window.innerHeight
+                canvas.width = width * dpr
+                canvas.height = height * dpr
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+            }
+
+            // 0 = large and centered, 1 = small and left-aligned
+            function progressAt(t) {
+                if (t <= HOLD) return 0
+                return smoothstep(clamp((t - HOLD) / TRANSITION, 0, 1))
+            }
+
+            function drawScene(scene, t) {
+                const papyrus = images[scene.papyrus]
+                const nw = papyrus.naturalWidth
+                const nh = papyrus.naturalHeight
+
+                const scaleLarge = (LARGE_FRACTION * height) / nh
+                const scaleSmall = scaleLarge * SMALL_FACTOR
+                const p = progressAt(t)
+                const scale = lerp(scaleLarge, scaleSmall, p)
+
+                const xLarge = (width - nw * scaleLarge) / 2
+                const yLarge = (height - nh * scaleLarge) / 2
+                const xSmall = MARGIN_LEFT
+                const ySmall = (height - nh * scaleSmall) / 2
+                const x = lerp(xLarge, xSmall, p)
+                const y = lerp(yLarge, ySmall, p)
+
+                ctx.drawImage(papyrus, x, y, nw * scale, nh * scale)
+
+                // icons are authored in papyrus-native coords, so they ride the
+                // same scale and offset as the papyrus
+                for (const icon of scene.icons) {
+                    const image = images[icon.name]
+                    const ih = icon.h * scale
+                    const iw = ih * (image.naturalWidth / image.naturalHeight)
+                    const cx = x + icon.cx * scale
+                    const cy = y + icon.cy * scale
+                    ctx.drawImage(image, cx - iw / 2, cy - ih / 2, iw, ih)
+                }
+            }
+
+            function frame(now) {
+                ctx.clearRect(0, 0, width, height)
+                if (current) drawScene(current, (now - startTime) / 1000)
+                requestAnimationFrame(frame)
+            }
 
             // preload all the assets at the beginning so that they don't fade
             // in progressively on first appearence
@@ -37,10 +116,11 @@
                 const res = await fetch('/assets')
                 const urls = await res.json()
                 await Promise.all(
-                    urls.map(url => {
+                    urls.map(async url => {
                         const image = new Image()
                         image.src = url
-                        return image.decode().catch(() => {})
+                        await image.decode().catch(() => {})
+                        images[url.split('/').pop()] = image
                     }),
                 )
             }
@@ -50,13 +130,25 @@
                     const res = await fetch('/tag')
                     const data = await res.json()
                     if (data.scene && SCENES[data.scene]) {
-                        img.src = SCENES[data.scene]
+                        current = SCENES[data.scene]
+                        startTime = performance.now()
                     }
                 } catch (e) {}
                 setTimeout(poll, 400)
             }
 
-            preloadAll().finally(poll)
+            function reset() {
+                return fetch('/reset', { method: 'POST' }).catch(() => {})
+            }
+
+            window.addEventListener('resize', resize)
+            resize()
+            reset()
+                .then(preloadAll)
+                .finally(() => {
+                    requestAnimationFrame(frame)
+                    poll()
+                })
         </script>
     </body>
 </html>
