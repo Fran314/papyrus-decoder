@@ -5,11 +5,17 @@ from gpiozero import PWMLED
 PINS = [17, 27, 22, 23, 24]
 SWEEP_DURATION = 3.0  # keep in sync with SCAN in static/index.html
 SWEEP_INTERVAL = 0.02
+IDLE_BRIGHTNESS = 0.1
 
 
 class Leds:
     def __init__(self, pins):
         self._leds = [PWMLED(pin) for pin in pins]
+        self.idle()
+
+    def idle(self):
+        for led in self._leds:
+            led.value = IDLE_BRIGHTNESS
 
     def sweep(self):
         last = len(self._leds) - 1
@@ -22,8 +28,7 @@ class Leds:
             for i, led in enumerate(self._leds):
                 led.value = max(0.0, 1.0 - abs(pos - i))
             time.sleep(SWEEP_INTERVAL)
-        for led in self._leds:
-            led.off()
+        self.idle()
 
 
 def open_leds():
