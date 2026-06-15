@@ -1,7 +1,9 @@
+import threading
 from pathlib import Path
 
 from flask import Flask, jsonify, send_from_directory
 
+from leds import open_leds
 from nfc_reader import open_reader
 
 ABSENCE_SCANS = 3
@@ -13,6 +15,8 @@ TAGS = {
 
 app = Flask(__name__)
 reader = open_reader()
+leds = open_leds()
+led_lock = threading.Lock()
 
 ASSETS = Path(app.static_folder) / "assets"
 
@@ -41,10 +45,22 @@ def index():
     return send_from_directory("static", "index.html")
 
 
+def fire_sweep():
+    if not led_lock.acquire(blocking=False):
+        return
+    try:
+        leds.sweep()
+    finally:
+        led_lock.release()
+
+
 @app.route("/tag")
 def tag():
     uid = poll_new_tag()
-    return jsonify(scene=TAGS.get(uid) if uid else None)
+    scene = TAGS.get(uid) if uid else None
+    if scene:
+        threading.Thread(target=fire_sweep, daemon=True).start()
+    return jsonify(scene=scene)
 
 
 @app.route("/assets")

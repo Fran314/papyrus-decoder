@@ -16,8 +16,12 @@ Interface: HSU / UART @ 115200 on `/dev/serial0`. Mode switches: I0 LOW, I1 LOW.
 Power from 5V, not 3.3V. TX/RX crossed. Power-cycle after changing mode
 switches.
 
-`raspi-config` -> Interface Options -> Serial Port: login shell over serial =
-No, serial hardware = Yes.
+Free the serial port for the PN532 (reboot after):
+
+```
+sudo raspi-config nonint do_serial_hw 0    # serial hardware on
+sudo raspi-config nonint do_serial_cons 1  # serial login console off
+```
 
 ## LEDs
 
@@ -34,6 +38,19 @@ No, serial hardware = Yes.
 ## Software
 
 ```
-python3 -m venv <venv>
-<venv>/bin/pip install flask gpiozero lgpio pn532pi
+python3 -m venv .venv
+.venv/bin/pip install flask gpiozero lgpio pn532pi
+.venv/bin/python app.py
 ```
+
+## Autostart
+
+systemd service (`papyrus-decoder.service`). Assumes user `admin` and project at
+`/home/admin/papyrus-decoder`. Edit the unit if your setup differs.
+
+```
+sudo cp papyrus-decoder.service /etc/systemd/system/
+sudo systemctl enable --now papyrus-decoder
+```
+
+Logs: `journalctl -u papyrus-decoder -f`.

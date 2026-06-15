@@ -27,7 +27,12 @@
                         { name: 'girino.png', cx: 500, cy: 250, h: 170 },
                         { name: 'fiore.png', cx: 270, cy: 470, h: 230 },
                         { name: 'dito.png', cx: 520, cy: 500, h: 230 },
-                        { name: 'corda_arrotolata.png', cx: 760, cy: 470, h: 190 },
+                        {
+                            name: 'corda_arrotolata.png',
+                            cx: 760,
+                            cy: 470,
+                            h: 190,
+                        },
                     ],
                 },
                 'papyrus-2': {
@@ -39,6 +44,7 @@
                 },
             }
 
+            const SCAN = 3.0 // keep in sync with SWEEP_DURATION in leds.py
             const HOLD = 1.5
             const TRANSITION = 1.0
             const MARGIN_LEFT = 60
@@ -68,9 +74,9 @@
             }
 
             // 0 = large and centered, 1 = small and left-aligned
-            function progressAt(t) {
-                if (t <= HOLD) return 0
-                return smoothstep(clamp((t - HOLD) / TRANSITION, 0, 1))
+            function placementProgress(t) {
+                if (t <= SCAN + HOLD) return 0
+                return smoothstep(clamp((t - SCAN - HOLD) / TRANSITION, 0, 1))
             }
 
             function drawScene(scene, t) {
@@ -80,7 +86,7 @@
 
                 const scaleLarge = (LARGE_FRACTION * height) / nh
                 const scaleSmall = scaleLarge * SMALL_FACTOR
-                const p = progressAt(t)
+                const p = placementProgress(t)
                 const scale = lerp(scaleLarge, scaleSmall, p)
 
                 const xLarge = (width - nw * scaleLarge) / 2
@@ -89,6 +95,14 @@
                 const ySmall = (height - nh * scaleSmall) / 2
                 const x = lerp(xLarge, xSmall, p)
                 const y = lerp(yLarge, ySmall, p)
+
+                const reveal = clamp(t / SCAN, 0, 1)
+                ctx.save()
+                if (reveal < 1) {
+                    ctx.beginPath()
+                    ctx.rect(x, 0, nw * scale * reveal, height)
+                    ctx.clip()
+                }
 
                 ctx.drawImage(papyrus, x, y, nw * scale, nh * scale)
 
@@ -101,6 +115,18 @@
                     const cx = x + icon.cx * scale
                     const cy = y + icon.cy * scale
                     ctx.drawImage(image, cx - iw / 2, cy - ih / 2, iw, ih)
+                }
+
+                ctx.restore()
+
+                if (reveal < 1) {
+                    const bx = x + nw * scale * reveal
+                    ctx.save()
+                    ctx.shadowColor = 'rgba(255, 255, 255, 0.9)'
+                    ctx.shadowBlur = 24
+                    ctx.fillStyle = '#fff'
+                    ctx.fillRect(bx - 6, 0, 12, height)
+                    ctx.restore()
                 }
             }
 
