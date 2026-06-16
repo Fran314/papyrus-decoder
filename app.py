@@ -13,7 +13,7 @@ TAGS = {
     "53d8f6e6630001": "papyrus-2",
 }
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path="")
 reader = open_reader()
 leds = open_leds()
 led_lock = threading.Lock()
@@ -65,7 +65,7 @@ def tag():
 
 @app.route("/assets")
 def assets():
-    urls = ["/static/assets/" + p.name for p in sorted(ASSETS.iterdir()) if p.is_file()]
+    urls = ["/assets/" + p.name for p in sorted(ASSETS.iterdir()) if p.is_file()]
     return jsonify(urls)
 
 
