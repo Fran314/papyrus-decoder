@@ -38,9 +38,10 @@ sudo raspi-config nonint do_serial_cons 1  # serial login console off
 ## Software
 
 ```
-python3 -m venv .venv
-.venv/bin/pip install flask gpiozero lgpio pn532pi
-.venv/bin/python app.py
+python -m venv --system-site-packages .venv
+source .venv/bin/activate
+pip install flask gpiozero lgpio pn532pi
+python app.py
 ```
 
 ## Autostart

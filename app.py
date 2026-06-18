@@ -1,5 +1,4 @@
 import threading
-from pathlib import Path
 
 from flask import Flask, jsonify, send_from_directory
 
@@ -9,16 +8,16 @@ from nfc_reader import open_reader
 ABSENCE_SCANS = 3
 
 TAGS = {
-    "53cd2fe9630001": "papyrus-1",
-    "53d8f6e6630001": "papyrus-2",
+    "53bbe7e6630001": "papiro-1",
+    "53d8f6e6630001": "papiro-2",
+    "5327eee6630001": "papiro-3",
+    "53cd2fe9630001": "papiro-4",
 }
 
 app = Flask(__name__, static_url_path="")
 reader = open_reader()
 leds = open_leds()
 led_lock = threading.Lock()
-
-ASSETS = Path(app.static_folder) / "assets"
 
 last_seen = None
 misses = 0
@@ -61,12 +60,6 @@ def tag():
     if scene:
         threading.Thread(target=fire_sweep, daemon=True).start()
     return jsonify(scene=scene)
-
-
-@app.route("/assets")
-def assets():
-    urls = ["/assets/" + p.name for p in sorted(ASSETS.iterdir()) if p.is_file()]
-    return jsonify(urls)
 
 
 @app.route("/reset", methods=["POST"])

@@ -1,52 +1,37 @@
 const SCENES = {
-    'papyrus-1': {
-        papyrus: 'papiro.png',
-        groups: [
-            {
-                value: 20000,
-                icons: [
-                    { name: 'dito.png', cx: 167, cy: 372, h: 380 },
-                    { name: 'dito.png', cx: 347, cy: 372, h: 380 },
-                ],
-            },
-            {
-                value: 400,
-                icons: [
-                    { name: 'corda_arrotolata.png', cx: 511, cy: 245, h: 95 },
-                    { name: 'corda_arrotolata.png', cx: 659, cy: 245, h: 95 },
-                    { name: 'corda_arrotolata.png', cx: 511, cy: 500, h: 95 },
-                    { name: 'corda_arrotolata.png', cx: 659, cy: 500, h: 95 },
-                ],
-            },
-            {
-                value: 20,
-                icons: [
-                    { name: 'corda_piegata.png', cx: 799, cy: 245, h: 160 },
-                    { name: 'corda_piegata.png', cx: 799, cy: 500, h: 160 },
-                ],
-            },
-            {
-                value: 2,
-                icons: [
-                    { name: 'bastoncino.png', cx: 905, cy: 245, h: 180 },
-                    { name: 'bastoncino.png', cx: 905, cy: 500, h: 180 },
-                ],
-            },
+    'papiro-1': {
+        background: 'assets/papiro-1/background.png',
+        symbols: [
+            { value: 100, icon: 'assets/papiro-1/corda-arrotolata.png' },
+            { value: 10, icon: 'assets/papiro-1/corda-piegata.png' },
+            { value: 1000, icon: 'assets/papiro-1/fiore.png' },
+            { value: 10000, icon: 'assets/papiro-1/dito.png' },
         ],
     },
-    'papyrus-2': {
-        papyrus: 'papiro.png',
-        groups: [
-            {
-                value: 1,
-                icons: [{ name: 'bastoncino.png', cx: 350, cy: 400, h: 300 }],
-            },
-            {
-                value: 10,
-                icons: [
-                    { name: 'corda_piegata.png', cx: 650, cy: 400, h: 280 },
-                ],
-            },
+    'papiro-2': {
+        background: 'assets/papiro-2/background.png',
+        symbols: [
+            { value: 100000, icon: 'assets/papiro-2/girino.png' },
+            { value: 30, icon: 'assets/papiro-2/corda-piegata.png' },
+            { value: 200, icon: 'assets/papiro-2/corda-arrotolata.png' },
+            { value: 2, icon: 'assets/papiro-2/bastoncino.png' },
+        ],
+    },
+    'papiro-3': {
+        background: 'assets/papiro-3/background.png',
+        symbols: [
+            { value: 100, icon: 'assets/papiro-3/corda-arrotolata.png' },
+            { value: 10, icon: 'assets/papiro-3/corda-piegata.png' },
+            { value: 20000, icon: 'assets/papiro-3/dito.png' },
+        ],
+    },
+    'papiro-4': {
+        background: 'assets/papiro-4/background.png',
+        symbols: [
+            { value: 20000, icon: 'assets/papiro-4/dito.png' },
+            { value: 400, icon: 'assets/papiro-4/corda-arrotolata.png' },
+            { value: 20, icon: 'assets/papiro-4/corda-piegata.png' },
+            { value: 2, icon: 'assets/papiro-4/bastoncino.png' },
         ],
     },
 }
@@ -57,7 +42,7 @@ const BAR_FADE = 0.75 // bar fades in/out parked at each end of the scan
 const PAUSE = 1.0
 const SHRINK = 1.0
 const HIGHLIGHT_FADE = 0.3
-const DIM_PAUSE = 0.6 // the all-dim beat before each group lights up
+const DIM_PAUSE = 0.6 // the all-dim beat before each symbol lights up
 const NUMBER_FADE = 0.4
 const SUM_FADE = 0.4
 const RESULT_FADE = 0.4
@@ -115,17 +100,17 @@ function buildTimeline(count) {
     seg(PAUSE)
 
     tl.turns = []
-    for (let g = 0; g < count; g++) {
-        const dimFade = seg(HIGHLIGHT_FADE) // previous group out, all dim
+    for (let i = 0; i < count; i++) {
+        const dimFade = seg(HIGHLIGHT_FADE) // previous symbol out, all dim
         seg(DIM_PAUSE)
-        const lightFade = seg(HIGHLIGHT_FADE) // this group in
+        const lightFade = seg(HIGHLIGHT_FADE) // this symbol in
         seg(PAUSE)
         const number = seg(NUMBER_FADE) // its number appears
         seg(PAUSE)
         tl.turns.push({ dimFade, lightFade, number })
     }
 
-    tl.allLight = seg(HIGHLIGHT_FADE) // every group back to full
+    tl.allLight = seg(HIGHLIGHT_FADE) // every symbol back to full
     seg(PAUSE)
     tl.sum = seg(SUM_FADE) // operators and rule
     seg(PAUSE)
@@ -133,19 +118,18 @@ function buildTimeline(count) {
     return tl
 }
 
-// each group is full while spotlit and dim otherwise, but only once
-// the highlight sequence is under way; before and after it everyone
-// is full
-function groupOpacity(t, tl, group) {
-    const next = tl.turns[group + 1]
-    const spotlight = pulse(t, tl.turns[group].lightFade, next && next.dimFade)
+// each symbol is full while spotlit and dim otherwise, but only once the
+// highlight sequence is under way. Before and after it everyone is full
+function symbolOpacity(t, tl, index) {
+    const next = tl.turns[index + 1]
+    const spotlight = pulse(t, tl.turns[index].lightFade, next && next.dimFade)
     const inSequence = pulse(t, tl.turns[0].dimFade, tl.allLight)
     const base = lerp(FULL_OPACITY, DIM_OPACITY, inSequence)
     return lerp(base, FULL_OPACITY, spotlight)
 }
 
 function papyrusLayout(scene, t, tl) {
-    const img = images[scene.papyrus]
+    const img = images[scene.background]
     const nw = img.naturalWidth
     const nh = img.naturalHeight
     const scaleLarge = (LARGE_FRACTION * height) / nh
@@ -178,18 +162,10 @@ function drawPapyrus(scene, t, tl, lay) {
 
     ctx.drawImage(lay.img, lay.x, lay.y, lay.w, lay.h)
 
-    // icons are authored in papyrus-native coords, so they ride the
-    // same scale and offset as the papyrus
-    scene.groups.forEach((group, g) => {
-        ctx.globalAlpha = groupOpacity(t, tl, g)
-        for (const icon of group.icons) {
-            const image = images[icon.name]
-            const h = icon.h * lay.scale
-            const w = h * (image.naturalWidth / image.naturalHeight)
-            const cx = lay.x + icon.cx * lay.scale
-            const cy = lay.y + icon.cy * lay.scale
-            ctx.drawImage(image, cx - w / 2, cy - h / 2, w, h)
-        }
+    // every overlay shares the background's rect, so dimming it dims its symbol
+    scene.symbols.forEach((symbol, i) => {
+        ctx.globalAlpha = symbolOpacity(t, tl, i)
+        ctx.drawImage(images[symbol.icon], lay.x, lay.y, lay.w, lay.h)
     })
 
     ctx.restore()
@@ -216,11 +192,11 @@ function drawScanBar(t, tl, lay) {
     ctx.restore()
 }
 
-// the stacked addition that grows in the area freed by the shrunk
-// papyrus: one right-aligned addend per group (dimming in lockstep
-// with its symbols), then operators, a rule and the total
+// the stacked addition that grows in the area freed by the shrunk papyrus:
+// one right-aligned addend per symbol (dimming in lockstep with it), then
+// operators, a rule and the total
 function drawNumbers(scene, t, tl, papyrusRight) {
-    const count = scene.groups.length
+    const count = scene.symbols.length
     const fontSize = height * 0.07
     const lineHeight = fontSize * 1.6
     const numbersRight = papyrusRight + (width - papyrusRight) * 0.55
@@ -228,7 +204,7 @@ function drawNumbers(scene, t, tl, papyrusRight) {
     const top = (height - count * lineHeight) / 2
     const rowY = row => top + row * lineHeight
 
-    const values = scene.groups.map(g => g.value)
+    const values = scene.symbols.map(s => s.value)
     const result = values.reduce((a, b) => a + b, 0)
 
     ctx.save()
@@ -238,15 +214,15 @@ function drawNumbers(scene, t, tl, papyrusRight) {
     ctx.strokeStyle = '#fff'
 
     ctx.textAlign = 'right'
-    values.forEach((value, g) => {
-        ctx.globalAlpha = groupOpacity(t, tl, g) * ease(t, tl.turns[g].number)
-        ctx.fillText(String(value), numbersRight, rowY(g))
+    values.forEach((value, i) => {
+        ctx.globalAlpha = symbolOpacity(t, tl, i) * ease(t, tl.turns[i].number)
+        ctx.fillText(String(value), numbersRight, rowY(i))
     })
 
     ctx.globalAlpha = ease(t, tl.sum)
     ctx.textAlign = 'left'
-    values.forEach((value, g) => {
-        ctx.fillText(g === count - 1 ? '=' : '+', operatorX, rowY(g))
+    values.forEach((value, i) => {
+        ctx.fillText(i === count - 1 ? '=' : '+', operatorX, rowY(i))
     })
 
     const labels = [...values, result].map(String)
@@ -287,38 +263,58 @@ function resize() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 }
 
-// preload all the assets at the beginning so that they don't fade
-// in progressively on first appearence
+function play(scene) {
+    current = scene
+    timeline = buildTimeline(scene.symbols.length)
+    startTime = performance.now()
+}
+
+// preload every image a scene needs, so nothing fades in progressively the
+// first time it is shown
 async function preloadAll() {
-    const res = await fetch('/assets')
-    const urls = await res.json()
+    const paths = new Set()
+    for (const scene of Object.values(SCENES)) {
+        paths.add(scene.background)
+        for (const symbol of scene.symbols) paths.add(symbol.icon)
+    }
     await Promise.all(
-        urls.map(async url => {
+        [...paths].map(async path => {
             const image = new Image()
-            image.src = url
+            image.src = path
             await image.decode().catch(() => {})
-            images[url.split('/').pop()] = image
+            images[path] = image
         }),
     )
 }
 
-// check if a tag is present, and if so start the animation
+// when the backend is reachable, scenes are driven by NFC tags; otherwise we
+// fall back to manual triggering and stop polling (see startup)
 async function poll() {
+    let data
     try {
-        const res = await fetch('/tag')
-        const data = await res.json()
-        if (data.scene && SCENES[data.scene]) {
-            current = SCENES[data.scene]
-            timeline = buildTimeline(current.groups.length)
-            startTime = performance.now()
-        }
-    } catch (e) {}
+        data = await (await fetch('/tag')).json()
+    } catch (e) {
+        console.info(
+            'no /tag backend: press 1-%d to trigger a scene',
+            Object.keys(SCENES).length,
+        )
+        return
+    }
+    if (data.scene && SCENES[data.scene]) play(SCENES[data.scene])
     setTimeout(poll, 400)
 }
 
-// reset the state of the backend
 function reset() {
     return fetch('/reset', { method: 'POST' }).catch(() => {})
+}
+
+// debug: trigger the Nth scene with its number key, with or without a backend
+function enableManualTrigger() {
+    const scenes = Object.values(SCENES)
+    window.addEventListener('keydown', e => {
+        const n = Number(e.key)
+        if (n >= 1 && n <= scenes.length) play(scenes[n - 1])
+    })
 }
 
 window.addEventListener('resize', resize)
@@ -326,6 +322,7 @@ resize()
 reset()
     .then(preloadAll)
     .finally(() => {
+        enableManualTrigger()
         requestAnimationFrame(frame)
         poll()
     })
