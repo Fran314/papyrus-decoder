@@ -1,4 +1,5 @@
 import threading
+import time
 
 from flask import Flask, jsonify, send_from_directory
 
@@ -6,6 +7,9 @@ from leds import open_leds
 from nfc_reader import open_reader
 
 ABSENCE_SCANS = 3
+
+# keep in sync with START_DELAY in scene.js
+START_DELAY = 2.0
 
 TAGS = {
     "53bbe7e6630001": "papiro-1",
@@ -48,6 +52,7 @@ def fire_sweep():
     if not led_lock.acquire(blocking=False):
         return
     try:
+        time.sleep(START_DELAY)
         leds.sweep()
     finally:
         led_lock.release()

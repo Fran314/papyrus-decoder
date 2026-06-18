@@ -36,6 +36,9 @@ const SCENES = {
     },
 }
 
+// keep in sync with START_DELAY in app.py
+const START_DELAY = 2.0
+
 // every phase of the animation, in seconds
 const SCAN = 5.0 // keep in sync with SWEEP_DURATION in leds.py
 const BAR_FADE = 0.75 // bar fades in/out parked at each end of the scan
@@ -300,7 +303,10 @@ async function poll() {
         )
         return
     }
-    if (data.scene && SCENES[data.scene]) play(SCENES[data.scene])
+    if (data.scene && SCENES[data.scene]) {
+        const scene = SCENES[data.scene]
+        setTimeout(() => play(scene), START_DELAY * 1000)
+    }
     setTimeout(poll, 400)
 }
 
